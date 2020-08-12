@@ -8,44 +8,43 @@ use std::collections::HashMap;
 
 use rocket::State;
 use rocket_contrib::json::{Json};
+use uuid::Uuid;
 
-type ID = usize;
-type PlayerMap = Mutex<HashMap<ID, Player>>;
+type PlayerMap = Mutex<HashMap<String, Player>>;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct Player {
-	id: Option<ID>,
 	name: String
 }
 
 #[derive(Serialize, Deserialize)]
 struct Response {
 	err: Option<String>,
-	token: Option<ID>
+	token: Option<String>
 }
 
 #[post("/players", format = "json", data = "<message>")]
 fn new_player(message: Json<Player>, map: State<PlayerMap>) -> Json<Response> {
-    let mut hashmap = map.lock().expect("map lock.");
-	let id: usize = 1;
-    hashmap.insert(id, Player {
-		id: Some(id),
-		name: message.0.name
-	});
+    let mut hashmap = map.lock().unwrap();
+	let id = Uuid::new_v4().to_hyphenated().to_string();
+    hashmap.insert(id.clone(), message.0);
 	Json(Response {
 		err: None,
 		token: Some(id)
 	})
 }
 
-#[get("/players/<id>",  format = "json")]
-fn get_player(id: ID, map: State<PlayerMap>) -> Option<Json<Player>> {
+#[get("/players", format = "json")]
+fn get_all_players(map: State<PlayerMap>) -> Json<HashMap<String, Player>> {
+    let hashmap = &*(map.lock().unwrap());
+	Json(hashmap.clone())
+}
+
+#[get("/players/<id>", format = "json")]
+fn get_player(id: String, map: State<PlayerMap>) -> Option<Json<Player>> {
     let hashmap = map.lock().unwrap();
 	hashmap.get(&id).map(|contents| {
-		Json(Player {
-			id: Some(id),
-			name: contents.name.clone()
-		})
+		Json(contents.clone())
 	})
 }
 
@@ -59,8 +58,8 @@ fn not_found() -> Json<Response> {
 
 fn main() {
     rocket::ignite()
-		.mount("/", routes![get_player, new_player])
+		.mount("/", routes![get_player, new_player, get_all_players])
 		.register(catchers![not_found])
-		.manage(Mutex::new(HashMap::<ID, Player>::new()))
+		.manage(Mutex::new(HashMap::<String, Player>::new()))
 		.launch();
 }

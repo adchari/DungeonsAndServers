@@ -36,6 +36,24 @@ fn new_player(message: Json<Player>, map: State<PlayerMap>) -> Json<Response> {
     })
 }
 
+#[put("/players/<id>", format = "json", data = "<message>")]
+fn update_player(
+    id: String,
+    message: Json<Player>,
+    map: State<PlayerMap>,
+) -> Option<Json<Response>> {
+    let mut hashmap = map.lock().unwrap();
+    if !hashmap.contains_key(&id) {
+        return None;
+    }
+
+    hashmap.insert(id.clone(), message.0);
+    Some(Json(Response {
+        err: None,
+        token: Some(id),
+    }))
+}
+
 #[get("/players", format = "json")]
 fn get_all_players(map: State<PlayerMap>) -> Json<HashMap<String, Player>> {
     let hashmap = &*(map.lock().unwrap());
@@ -48,6 +66,17 @@ fn get_player(id: String, map: State<PlayerMap>) -> Option<Json<Player>> {
     hashmap.get(&id).map(|contents| Json(contents.clone()))
 }
 
+#[delete("/players/<id>", format = "json")]
+fn remove_player(id: String, map: State<PlayerMap>) -> Option<Json<Response>> {
+    let mut hashmap = map.lock().unwrap();
+    hashmap.remove(&id).map(|_key| {
+        Json(Response {
+            err: None,
+            token: Some(id),
+        })
+    })
+}
+
 #[catch(404)]
 fn not_found() -> Json<Response> {
     Json(Response {
@@ -58,7 +87,16 @@ fn not_found() -> Json<Response> {
 
 fn main() {
     rocket::ignite()
-        .mount("/", routes![get_player, new_player, get_all_players])
+        .mount(
+            "/",
+            routes![
+                get_player,
+                new_player,
+                get_all_players,
+                update_player,
+                remove_player
+            ],
+        )
         .register(catchers![not_found])
         .manage(Mutex::new(HashMap::<String, Player>::new()))
         .launch();

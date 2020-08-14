@@ -12,62 +12,11 @@ use rocket::State;
 use rocket_contrib::json::Json;
 use uuid::Uuid;
 
-type PlayerMap = Mutex<HashMap<String, Player>>;
-type WorldMap = Mutex<HashMap<String, World>>;
-type MonsterManualMap = Mutex<HashMap<String, MonsterManual>>;
-type NPCManualMap = Mutex<HashMap<String, NPCManual>>;
-type ItemManualMap = Mutex<HashMap<String, ItemManual>>;
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Player {
-    name: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct World {
-    locations: Vec<Location>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Location {
-    name: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct MonsterManual {
-    monsters: Vec<Monster>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Monster {
-    name: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct NPCManual {
-    npcs: Vec<NPC>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct NPC {
-    name: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct ItemManual {
-    items: Vec<Item>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-struct Item {
-    name: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Response {
-    err: Option<String>,
-    token: Option<String>,
-}
+pub mod types;
+use crate::types::{
+    ItemManual, ItemManualMap, MonsterManual, MonsterManualMap, NPCManual, NPCManualMap, Player,
+    PlayerMap, Response, World, WorldMap,
+};
 
 // Players
 #[post("/players", format = "json", data = "<message>")]
@@ -101,10 +50,10 @@ fn update_player(
 
 #[get("/players")]
 fn get_all_players(map: State<PlayerMap>) -> Json<Vec<String>> {
-	let hashmap = map.lock().unwrap();
+    let hashmap = map.lock().unwrap();
     Json(hashmap.keys().cloned().collect::<Vec<String>>())
 }
-  
+
 #[get("/players/<id>")]
 fn get_player(id: String, map: State<PlayerMap>) -> Option<Json<Player>> {
     let hashmap = map.lock().unwrap();
@@ -135,11 +84,7 @@ fn new_world(message: Json<World>, map: State<WorldMap>) -> Json<Response> {
 }
 
 #[put("/worlds/<id>", format = "json", data = "<message>")]
-fn update_world(
-    id: String,
-    message: Json<World>,
-    map: State<WorldMap>,
-) -> Option<Json<Response>> {
+fn update_world(id: String, message: Json<World>, map: State<WorldMap>) -> Option<Json<Response>> {
     let mut hashmap = map.lock().unwrap();
     if !hashmap.contains_key(&id) {
         return None;
@@ -154,10 +99,10 @@ fn update_world(
 
 #[get("/worlds")]
 fn get_all_worlds(map: State<WorldMap>) -> Json<Vec<String>> {
-	let hashmap = map.lock().unwrap();
+    let hashmap = map.lock().unwrap();
     Json(hashmap.keys().cloned().collect::<Vec<String>>())
 }
-  
+
 #[get("/worlds/<id>")]
 fn get_world(id: String, map: State<WorldMap>) -> Option<Json<World>> {
     let hashmap = map.lock().unwrap();
@@ -207,10 +152,10 @@ fn update_npc(
 
 #[get("/npcs")]
 fn get_all_npcs(map: State<NPCManualMap>) -> Json<Vec<String>> {
-	let hashmap = map.lock().unwrap();
+    let hashmap = map.lock().unwrap();
     Json(hashmap.keys().cloned().collect::<Vec<String>>())
 }
-  
+
 #[get("/npcs/<id>")]
 fn get_npc(id: String, map: State<NPCManualMap>) -> Option<Json<NPCManual>> {
     let hashmap = map.lock().unwrap();
@@ -260,10 +205,10 @@ fn update_monster(
 
 #[get("/monsters")]
 fn get_all_monsters(map: State<MonsterManualMap>) -> Json<Vec<String>> {
-	let hashmap = map.lock().unwrap();
+    let hashmap = map.lock().unwrap();
     Json(hashmap.keys().cloned().collect::<Vec<String>>())
 }
-  
+
 #[get("/monsters/<id>")]
 fn get_monster(id: String, map: State<MonsterManualMap>) -> Option<Json<MonsterManual>> {
     let hashmap = map.lock().unwrap();
@@ -313,10 +258,10 @@ fn update_item(
 
 #[get("/items")]
 fn get_all_items(map: State<ItemManualMap>) -> Json<Vec<String>> {
-	let hashmap = map.lock().unwrap();
+    let hashmap = map.lock().unwrap();
     Json(hashmap.keys().cloned().collect::<Vec<String>>())
 }
-  
+
 #[get("/items/<id>")]
 fn get_item(id: String, map: State<ItemManualMap>) -> Option<Json<ItemManual>> {
     let hashmap = map.lock().unwrap();
@@ -352,22 +297,22 @@ fn main() {
                 get_all_players,
                 update_player,
                 remove_player,
-				get_world,
+                get_world,
                 new_world,
                 get_all_worlds,
                 update_world,
                 remove_world,
-				get_npc,
+                get_npc,
                 new_npc,
                 get_all_npcs,
                 update_npc,
                 remove_npc,
-				get_monster,
+                get_monster,
                 new_monster,
                 get_all_monsters,
                 update_monster,
                 remove_monster,
-				get_item,
+                get_item,
                 new_item,
                 get_all_items,
                 update_item,
@@ -376,9 +321,9 @@ fn main() {
         )
         .register(catchers![not_found])
         .manage(Mutex::new(HashMap::<String, Player>::new()))
-		.manage(Mutex::new(HashMap::<String, World>::new()))
-		.manage(Mutex::new(HashMap::<String, MonsterManual>::new()))
-		.manage(Mutex::new(HashMap::<String, NPCManual>::new()))
-		.manage(Mutex::new(HashMap::<String, ItemManual>::new()))
+        .manage(Mutex::new(HashMap::<String, World>::new()))
+        .manage(Mutex::new(HashMap::<String, MonsterManual>::new()))
+        .manage(Mutex::new(HashMap::<String, NPCManual>::new()))
+        .manage(Mutex::new(HashMap::<String, ItemManual>::new()))
         .launch();
 }

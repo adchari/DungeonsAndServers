@@ -1,7 +1,7 @@
 # DungeonsAndServers
 A D&D/Adventure-esque multiplayer server
 
-## Initial scope
+## Endpoints
 - There will be a server written, which manages several games, each with a set of players
   - In order to accomplish this, whatever server client is written will need to identify games based on some discerning factors
   - In addition, a combination of a player ID and game ID should allow the server to discern which state machine to update. 
@@ -19,5 +19,13 @@ A D&D/Adventure-esque multiplayer server
    - `/game/end/:game_key/:player_key` is a DELETE request. If the player key is specified, it simply drops the player from that game, if it isn't, the game is killed. This may cause errors, but hopefully if users are collaborating, it should be fine. This also may allow game state to be saved for a period of time after all players leave, allowing some to rejoin in the future. 
 - There should be a client package written, most likely a CLI application capable of wrapping these requests in convenient ways, so that users can just interact with that.
 
+## Specifics of the Game
+- Players need certain details. Traditionally, a D&D game requires player characters to define their stats with some combination of race and class. I think a much simpler form of this system is ideal. Maybe two classes, warriors and mages. It might be better to classify both as "attacks" and get rid of the class system entirely. 
+  - So realistically, a player needs a name, some basic stats, (I'm thinking str, dex, wis, cha, int, con?), maybe a leveling system (seems less important, but useful). 
+  - A player should have a list of items and a list of attacks
+  - Health should be tracked
+  - Armor class should be tracked (based on items?)
+- Locations can have several features, including a description key based on perception rolls, room names, a list of connected rooms, a list of NPCs, a list of monsters, a list of items, a list of players
+  - Implementing keys may be weird but necessary, I think a set of attributes should be stored for each connecting room (guarded, locked, etc.)
+- NPCs may need dialogue options, won't implement attacking of NPCs so they don't need health/stats. I think trading with them should be part of some phase two, but basic dialogue should be simple to implement. 
 ## Schemas
-- I should define a schema for players, NPCs, monsters, items, locations. 

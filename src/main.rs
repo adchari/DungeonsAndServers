@@ -14,9 +14,55 @@ use uuid::Uuid;
 
 pub mod types;
 use crate::types::{
-    ItemManual, ItemManualMap, MonsterManual, MonsterManualMap, NPCManual, NPCManualMap, Player,
-    PlayerMap, Response, World, WorldMap,
+    Game, GameMap, ItemManual, ItemManualMap, MonsterManual, MonsterManualMap, NPCManual,
+    NPCManualMap, Player, PlayerMap, Response, World, WorldMap,
 };
+
+// Game
+#[get("/game/create/<world>/<items>/<monsters>/<npcs>")]
+fn create_game(
+    world: String,
+    items: String,
+    monsters: String,
+    npcs: String,
+    game_map: State<GameMap>,
+    world_map: State<WorldMap>,
+    item_map: State<ItemManualMap>,
+    monster_map: State<MonsterManualMap>,
+    npc_map: State<NPCManualMap>,
+) -> Option<Json<Response>> {
+    let locked_world = world_map.lock().unwrap();
+    let locked_item = item_map.lock().unwrap();
+    let locked_monster = monster_map.lock().unwrap();
+    let locked_npc = npc_map.lock().unwrap();
+
+    match (
+        locked_world.get(&world),
+        locked_item.get(&items),
+        locked_monster.get(&monsters),
+        locked_npc.get(&npcs),
+    ) {
+        (Some(w), Some(i), Some(m), Some(n)) => {
+            let mut hashmap = game_map.lock().unwrap();
+            let id = Uuid::new_v4().to_hyphenated().to_string();
+            hashmap.insert(
+                id.clone(),
+                Game {
+                    world: w.clone(),
+                    items: i.clone(),
+                    npcs: n.clone(),
+                    monsters: m.clone(),
+                    players: HashMap::<String, String>::new(),
+                },
+            );
+            Some(Json(Response {
+                err: None,
+                token: Some(id),
+            }))
+        }
+        _ => None,
+    }
+}
 
 // Players
 #[post("/players", format = "json", data = "<message>")]
@@ -316,7 +362,8 @@ fn main() {
                 new_item,
                 get_all_items,
                 update_item,
-                remove_item
+                remove_item,
+                create_game,
             ],
         )
         .register(catchers![not_found])
@@ -325,5 +372,6 @@ fn main() {
         .manage(Mutex::new(HashMap::<String, MonsterManual>::new()))
         .manage(Mutex::new(HashMap::<String, NPCManual>::new()))
         .manage(Mutex::new(HashMap::<String, ItemManual>::new()))
+        .manage(Mutex::new(HashMap::<String, Game>::new()))
         .launch();
 }
